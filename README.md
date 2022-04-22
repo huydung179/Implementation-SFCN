@@ -1,4 +1,4 @@
-Training code for https://doi.org/10.1101/2019.12.17.879346
+Training code for the article Accurate brain age prediction with lightweight deep neural networks https://doi.org/10.1101/2019.12.17.879346
 
 ## Examples
 Checkout the file [**examples.ipynb**](https://github.com/ha-ha-ha-han/UKBiobank_deep_pretrain/blob/master/examples.ipynb)
