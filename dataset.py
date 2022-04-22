@@ -12,7 +12,7 @@ from torch.utils.data import Dataset
 from dp_model.dp_utils import num2vect
 
 
-def resize_input(data_dir, out_dir, target_shape=[160, 192, 160], device=None, s=2):
+def resize_input(data_dir, out_dir, target_shape=[181, 217, 181], device=None, s=2):
 	if len(glob.glob(join(out_dir, '*'))) > 0:
 		return
 	else:
@@ -20,6 +20,7 @@ def resize_input(data_dir, out_dir, target_shape=[160, 192, 160], device=None, s
 	files = glob.glob(join(data_dir, '*.nii.gz'))
 	for f in tqdm(files, leave=False, ncols=80):
 		input_tensor = torch.from_numpy(np.array(nib.load(f).get_fdata()).astype('float32')).to(device)
+		input_tensor = F.interpolate(input_tensor, size=target_shape)
 		torch.save(input_tensor.cpu(), join(out_dir, basename(f) + '.pt'))
 
 
