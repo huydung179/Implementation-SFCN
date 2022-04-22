@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.stats import norm
 
-def num2vect(x, bin_range, bin_step, sigma):
+def num2vect(x, bin_range=[0, 95], bin_step=1, sigma=1):
     """
     v,bin_centers = number2vector(x,bin_range,bin_step,sigma)
     bin_range: (start, end), size-2 tuple

@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class SFCN(nn.Module):
-    def __init__(self, channel_number=[32, 64, 128, 256, 256, 64], output_dim=40, dropout=True):
+    def __init__(self, channel_number=[32, 64, 128, 256, 256, 64], output_dim=95, dropout=True):
         super(SFCN, self).__init__()
         n_layer = len(channel_number)
         self.feature_extractor = nn.Sequential()
@@ -56,11 +56,9 @@ class SFCN(nn.Module):
         return layer
 
     def forward(self, x):
-        out = list()
         x_f = self.feature_extractor(x)
         x = self.classifier(x_f)
         x = F.log_softmax(x, dim=1)
-        out.append(x)
-        return out
+        return x
 
 
