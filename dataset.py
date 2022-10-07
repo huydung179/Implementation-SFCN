@@ -12,16 +12,12 @@ from torch.utils.data import Dataset
 from dp_model.dp_utils import num2vect
 
 
-def resize_input(data_dir, out_dir, target_shape=[181, 217, 181], device=None, s=2):
-	if len(glob.glob(join(out_dir, '*'))) > 0:
-		return
-	else:
-		os.makedirs(out_dir, exist_ok=True)
-	files = glob.glob(join(data_dir, '*.nii.gz'))
-	for f in tqdm(files, leave=False, ncols=80):
-		input_tensor = torch.from_numpy(np.array(nib.load(f).get_fdata()).astype('float32')).to(device)
-		input_tensor = F.interpolate(input_tensor, size=target_shape)
-		torch.save(input_tensor.cpu(), join(out_dir, basename(f) + '.pt'))
+def resize_input(metadata, out_dir, target_shape=[181, 217, 181], device=None, s=2):
+	os.makedirs(out_dir, exist_ok=True)
+	for i in tqdm(range(len(metadata)), leave=False, ncols=80):
+		input_tensor = torch.from_numpy(np.array(nib.load(metadata.iloc[i].T1_path).get_fdata()).astype('float32')).to(device)
+		input_tensor = F.interpolate(input_tensor.unsqueeze(0).unsqueeze(0), size=target_shape).squeeze()
+		torch.save(input_tensor.cpu(), join(out_dir, metadata.iloc[i].Subject + '.pt'))
 
 
 def train_val_split(metadata_csv, train_ratio=0.8):
@@ -37,15 +33,18 @@ def train_val_split(metadata_csv, train_ratio=0.8):
 
 
 class LifeSpanDataset(Dataset):
-	def __init__(self, train_dir, metadata, input_shape=[160, 192, 160], random_shift=False, s=2, flip=False):
+	def __init__(self, resized_img_dir, metadata, input_shape=[167, 212, 160], random_shift=False, s=2, flip=False):
 		super(LifeSpanDataset, self).__init__()
-		self.train_dir = train_dir
 		self.metadata = metadata
+		self.resized_img_dir = resized_img_dir
 		self.input_shape = input_shape
 		self.random_shift = random_shift
 		self.s = s
 		self.flip = flip
-		self.border = [10, 12, 10]
+		self.border = [
+			(181 - input_shape[0]) // 2,
+			(217 - input_shape[1]) // 2,
+			(181 - input_shape[2]) // 2]
 	
 	def __len__(self):
 		return len(self.metadata)
@@ -57,9 +56,7 @@ class LifeSpanDataset(Dataset):
 			start = [e.item() + b for e, b in zip(start, self.border)]
 		else:
 			start = self.border
-		input_img = torch.load(
-			join(self.train_dir, 'n_mmni_f' + self.metadata.filename.iloc[i] + '.pt')
-		).unsqueeze(0)
+		input_img = torch.load(join(self.resized_img_dir, self.metadata.Subject.iloc[i]) + '.pt').unsqueeze(0)
 		input_img = input_img / input_img.mean()
 		input_img = input_img[
 			...,
@@ -77,8 +74,8 @@ class LifeSpanDataset(Dataset):
 				# img = nib.Nifti1Image(input_img.squeeze().cpu().numpy().astype("float32"), T1_img.affine)
 				# img.to_filename(join('/opt/deep/data', f"{self.metadata.filename.iloc[i]}_cp.nii.gz"))
 				# raise NotImplementedError
-		real_y = torch.tensor([self.metadata.age.iloc[i]])
-		age_soft, bc = num2vect(self.metadata.age.iloc[i])
+		real_y = torch.tensor([self.metadata.Age.iloc[i]])
+		age_soft, bc = num2vect(self.metadata.Age.iloc[i])
 		age_soft = torch.tensor(age_soft).type(torch.FloatTensor)
 		bc = torch.from_numpy(bc)
 
